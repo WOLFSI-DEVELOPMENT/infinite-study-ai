@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -30,15 +31,21 @@
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
+              chewy: ['Chewy', 'cursive'],
             },
             animation: {
               'float': 'float 6s ease-in-out infinite',
               'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'fade-in': 'fadeIn 0.3s ease-out forwards',
             },
             keyframes: {
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
                 '50%': { transform: 'translateY(-10px)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
               }
             }
           },
@@ -46,6 +53,7 @@
       }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
     <style>
       body {
         font-family: 'Inter', sans-serif;
@@ -59,6 +67,85 @@
       .no-scrollbar {
         -ms-overflow-style: none;
         scrollbar-width: none;
+      }
+      
+      .bg-grid-pattern {
+        background-size: 40px 40px;
+        background-image: 
+          linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+        mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+      }
+      
+      /* Glassmorphism utilities */
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      /* --- LIQUID GLASS STYLES (Study Pilot) --- */
+      :root {
+        --lg-bg-color: rgba(255, 255, 255, 0.25);
+        --lg-highlight: rgba(255, 255, 255, 0.75);
+        --lg-text: #ffffff;
+        --lg-red: #fb4268;
+        --lg-grey: #e5e7eb; /* Lightened for dark bg */
+      }
+
+      /* Removed dark gradient to show main app background */
+      .pilot-bg {
+        background: transparent; 
+      }
+
+      .glass-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: transparent;
+        border-radius: 1.5rem; /* BOXY LOOK */
+        overflow: hidden;
+        /* box-shadow: 0 6px 6px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1); */
+        color: var(--lg-text);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+      }
+
+      .glass-filter,
+      .glass-overlay,
+      .glass-specular {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+      }
+
+      .glass-filter {
+        z-index: 0;
+        backdrop-filter: blur(16px);
+        filter: url(#lensFilter) saturate(120%) brightness(1.2);
+      }
+
+      .glass-overlay {
+        z-index: 1;
+        background: var(--lg-bg-color);
+      }
+
+      .glass-specular {
+        z-index: 2;
+        box-shadow: inset 1px 1px 0 var(--lg-highlight),
+          inset 0 0 5px var(--lg-highlight);
+      }
+
+      .glass-content {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex: 1 1 auto;
+        align-items: center;
+        padding: 8px 16px; 
+        gap: 1rem;
       }
     </style>
   <script type="importmap">
@@ -78,6 +165,17 @@
 </head>
   <body>
     <div id="root"></div>
+    
+    <!-- SVG Filter for Liquid Glass Effect -->
+    <svg style="position: absolute; width: 0; height: 0;">
+        <defs>
+            <filter id="lensFilter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" />
+            </filter>
+        </defs>
+    </svg>
+
     <script type="module" src="index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>

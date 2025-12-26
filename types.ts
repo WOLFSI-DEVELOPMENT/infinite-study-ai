@@ -1,7 +1,10 @@
+
 export interface StudyMaterial {
   id: string;
   title: string;
-  content: string;
+  content: string; // This is the main study content
+  context?: string; // This is the extra context (rubric, etc.)
+  images?: string[]; // Base64 strings
   createdAt: number;
   type: 'text' | 'file';
 }
@@ -13,6 +16,13 @@ export interface Flashcard {
   status: 'new' | 'learning' | 'review' | 'mastered';
   difficulty?: 'easy' | 'medium' | 'hard';
   nextReview?: number;
+}
+
+export interface ConceptMapNode {
+  id: string;
+  label: string;
+  details?: string;
+  children?: ConceptMapNode[];
 }
 
 export interface QuizQuestion {
@@ -54,6 +64,14 @@ export interface UserStats {
   totalCardsLearned: number;
   totalQuizzesTaken: number;
   averageQuizScore: number;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  date: string; // ISO Date String YYYY-MM-DD
+  completed: boolean;
+  time?: string;
 }
 
 export enum TabView {

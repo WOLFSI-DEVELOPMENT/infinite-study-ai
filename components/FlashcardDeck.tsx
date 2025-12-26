@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Flashcard } from '../types';
 import { Check, RotateCcw, ThumbsUp, ThumbsDown } from 'lucide-react';
@@ -72,8 +73,8 @@ const FlashcardDeck: React.FC<Props> = ({ cards, onUpdateCard }) => {
         <div className={`relative w-full h-full duration-500 transform-style-3d transition-all ${isFlipped ? 'rotate-y-180' : ''}`}>
           
           {/* Front */}
-          <div className="absolute w-full h-full bg-gray-50 rounded-3xl p-8 flex flex-col items-center justify-center text-center backface-hidden border border-gray-100 shadow-inner">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Question</span>
+          <div className="absolute w-full h-full bg-gray-50 rounded-3xl p-8 flex flex-col items-center justify-center text-center backface-hidden border border-gray-100 shadow-inner overflow-y-auto no-scrollbar">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 sticky top-0 bg-gray-50 pb-2 w-full">Question</span>
             <p className="text-2xl md:text-3xl font-medium leading-relaxed text-gray-900">
               {currentCard.front}
             </p>
@@ -81,8 +82,8 @@ const FlashcardDeck: React.FC<Props> = ({ cards, onUpdateCard }) => {
           </div>
 
           {/* Back */}
-          <div className="absolute w-full h-full bg-black rounded-3xl p-8 flex flex-col items-center justify-center text-center backface-hidden rotate-y-180 text-white">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Answer</span>
+          <div className="absolute w-full h-full bg-black rounded-3xl p-8 flex flex-col items-center justify-center text-center backface-hidden rotate-y-180 text-white overflow-y-auto no-scrollbar">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 sticky top-0 bg-black pb-2 w-full">Answer</span>
             <p className="text-xl md:text-2xl leading-relaxed">
               {currentCard.back}
             </p>

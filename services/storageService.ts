@@ -1,11 +1,15 @@
-import { StudyMaterial, Flashcard, QuizResult, StudyPlan, UserStats } from '../types';
+
+import { StudyMaterial, Flashcard, QuizResult, StudyPlan, UserStats, ConceptMapNode, Task } from '../types';
 
 const KEYS = {
   MATERIALS: 'sb_materials',
   FLASHCARDS: 'sb_flashcards',
   QUIZ_RESULTS: 'sb_quiz_results',
-  STUDY_PLANS: 'sb_study_plans',
+  STUDY_PLANS: 'sb_study_plans', 
+  OVERVIEWS: 'sb_overviews',
+  CONCEPT_MAPS: 'sb_concept_maps',
   STATS: 'sb_stats',
+  TASKS: 'sb_tasks'
 };
 
 export const saveMaterial = (material: StudyMaterial) => {
@@ -26,8 +30,6 @@ export const deleteMaterial = (id: string) => {
 
 export const saveFlashcards = (materialId: string, cards: Flashcard[]) => {
   const allCards = getAllFlashcards();
-  // Remove existing cards for this material if overwriting or just append? 
-  // Let's store by material ID map for simplicity in this demo
   const updated = { ...allCards, [materialId]: cards };
   localStorage.setItem(KEYS.FLASHCARDS, JSON.stringify(updated));
 };
@@ -54,6 +56,63 @@ export const getQuizResults = (): QuizResult[] => {
   return data ? JSON.parse(data) : [];
 };
 
+export const saveOverview = (materialId: string, overview: string) => {
+    const data = getAllOverviews();
+    const updated = { ...data, [materialId]: overview };
+    localStorage.setItem(KEYS.OVERVIEWS, JSON.stringify(updated));
+}
+
+export const getOverview = (materialId: string): string => {
+    const data = getAllOverviews();
+    return data[materialId] || "";
+}
+
+const getAllOverviews = (): Record<string, string> => {
+    const data = localStorage.getItem(KEYS.OVERVIEWS);
+    return data ? JSON.parse(data) : {};
+}
+
+export const saveConceptMap = (materialId: string, map: ConceptMapNode) => {
+    const data = getAllConceptMaps();
+    const updated = { ...data, [materialId]: map };
+    localStorage.setItem(KEYS.CONCEPT_MAPS, JSON.stringify(updated));
+}
+
+export const getConceptMap = (materialId: string): ConceptMapNode | null => {
+    const data = getAllConceptMaps();
+    return data[materialId] || null;
+}
+
+const getAllConceptMaps = (): Record<string, ConceptMapNode> => {
+    const data = localStorage.getItem(KEYS.CONCEPT_MAPS);
+    return data ? JSON.parse(data) : {};
+}
+
+// Tasks Logic
+export const saveTask = (task: Task) => {
+    const tasks = getTasks();
+    tasks.push(task);
+    localStorage.setItem(KEYS.TASKS, JSON.stringify(tasks));
+}
+
+export const getTasks = (): Task[] => {
+    const data = localStorage.getItem(KEYS.TASKS);
+    return data ? JSON.parse(data) : [];
+}
+
+export const updateTask = (task: Task) => {
+    const tasks = getTasks();
+    const updated = tasks.map(t => t.id === task.id ? task : t);
+    localStorage.setItem(KEYS.TASKS, JSON.stringify(updated));
+}
+
+export const deleteTask = (id: string) => {
+    const tasks = getTasks().filter(t => t.id !== id);
+    localStorage.setItem(KEYS.TASKS, JSON.stringify(tasks));
+}
+
+
+// Deprecated in UI but kept for storage integrity
 export const saveStudyPlan = (plan: StudyPlan) => {
   const plans = getAllStudyPlans();
   const updated = { ...plans, [plan.materialId]: plan };

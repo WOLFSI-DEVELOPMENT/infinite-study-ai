@@ -1,50 +1,80 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { Flashcard, QuizQuestion, StudyPlan } from '../types';
+import { Flashcard, QuizQuestion, ConceptMapNode } from '../types';
 
-// Initialize Gemini Client
-// In a real app, API Key should be handled securely via backend proxy.
-// For this demo, we assume process.env.API_KEY is injected or handled by the environment.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const MODEL_NAME = 'gemini-3-flash-preview';
 
-export const generateSummary = async (text: string, length: 'short' | 'medium' | 'detailed'): Promise<string> => {
+/**
+ * Helper to construct the API payload with text, optional context, and optional images.
+ */
+const buildContents = (promptText: string, mainContent: string, context?: string, images?: string[]) => {
+  const parts: any[] = [];
+  
+  // 1. Instructions & Main Content
+  let fullText = `${promptText}\n\n=== MAIN STUDY MATERIAL ===\n${mainContent.substring(0, 30000)}`;
+
+  // 2. Add Context if exists
+  if (context) {
+    fullText += `\n\n=== CONTEXT / RUBRIC / GRADING CRITERIA ===\n${context.substring(0, 10000)}`;
+  }
+
+  parts.push({ text: fullText });
+
+  // 3. Add Images if exist
+  if (images && images.length > 0) {
+    images.forEach(base64 => {
+      // Clean base64 string if it contains data URI prefix
+      const cleanBase64 = base64.split(',')[1] || base64;
+      parts.push({
+        inlineData: {
+          mimeType: 'image/png', // Assuming PNG/JPEG, API is flexible usually
+          data: cleanBase64
+        }
+      });
+    });
+  }
+
+  return { parts };
+};
+
+export const generateSummary = async (text: string, context?: string, images?: string[]): Promise<string> => {
   const prompt = `
     You are an expert study assistant. 
-    Analyze the following text and provide a ${length} summary.
-    Use bullet points for clarity. 
-    Focus on key concepts and definitions.
+    Create a comprehensive study guide/summary for the provided material.
     
-    Text:
-    ${text.substring(0, 30000)}
+    CRITICAL: If a Rubric or Context is provided, ensure the summary highlights sections that are most important based on that rubric.
+    
+    Format:
+    - Use HTML <h3> for headers.
+    - Use <ul><li> for bullet points.
+    - Use <mark> tags to highlight specific key terms, dates, or crucial definitions.
+    - Use <strong> for emphasis.
+    - Keep it structured and easy to read.
   `;
 
   try {
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
-      contents: prompt,
+      contents: buildContents(prompt, text, context, images),
     });
     return response.text || "Could not generate summary.";
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error("Failed to generate summary.");
+    console.error("Gemini API Error (Summary):", error);
+    return "Failed to generate summary. Please try again.";
   }
 };
 
-export const generateFlashcards = async (text: string, count: number = 10): Promise<Flashcard[]> => {
+export const generateFlashcards = async (text: string, context?: string, images?: string[]): Promise<Flashcard[]> => {
   const prompt = `
-    Generate ${count} flashcards from the provided text.
-    Return a JSON array where each object has "front" (question/term) and "back" (answer/definition).
-    Keep them concise.
-    
-    Text:
-    ${text.substring(0, 30000)}
+    Generate 10 high-quality flashcards.
+    If context/rubric is provided, prioritize questions that align with the grading criteria.
   `;
 
   try {
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
-      contents: prompt,
+      contents: buildContents(prompt, text, context, images),
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -68,28 +98,21 @@ export const generateFlashcards = async (text: string, count: number = 10): Prom
       status: 'new',
     }));
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error("Failed to generate flashcards.");
+    console.error("Gemini API Error (Cards):", error);
+    return [];
   }
 };
 
-export const generateQuiz = async (text: string, count: number = 5): Promise<QuizQuestion[]> => {
+export const generateQuiz = async (text: string, context?: string, images?: string[]): Promise<QuizQuestion[]> => {
   const prompt = `
-    Create a multiple-choice quiz with ${count} questions based on the text.
-    Return a JSON array. Each object must have:
-    - "question": string
-    - "options": array of 4 strings
-    - "correctAnswer": integer (0-3 index of the correct option)
-    - "explanation": short string explaining why.
-    
-    Text:
-    ${text.substring(0, 30000)}
+    Create a 10-minute quiz (approx 8 questions).
+    Prioritize topics emphasized in the Context/Rubric if present.
   `;
 
   try {
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
-      contents: prompt,
+      contents: buildContents(prompt, text, context, images),
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -113,50 +136,61 @@ export const generateQuiz = async (text: string, count: number = 5): Promise<Qui
       ...q
     }));
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error("Failed to generate quiz.");
+    console.error("Gemini API Error (Quiz):", error);
+    return [];
   }
 };
 
-export const generateStudyPlan = async (text: string, examDate: string, dailyMinutes: number): Promise<StudyPlan> => {
+export const generateConceptMap = async (text: string, context?: string, images?: string[]): Promise<ConceptMapNode> => {
     const prompt = `
-      Create a personalized study plan leading up to ${examDate}.
-      The student has ${dailyMinutes} minutes available per day.
-      Base the topics strictly on the provided text.
+      Create a hierarchical concept map of the main topics.
+      The structure should be: Root Topic -> Main Concepts -> Details/Sub-concepts.
       
-      Return a JSON object with a "schedule" property, which is an array of daily plans.
-      Each daily plan should have:
-      - "day": integer (1, 2, 3...)
-      - "date": string (ISO date YYYY-MM-DD)
-      - "topics": array of strings (topics to cover)
-      - "activities": array of strings (e.g., "Read section X", "Review flashcards")
-      - "durationMinutes": integer
-      
-      Start from tomorrow's date.
-      
-      Text Context:
-      ${text.substring(0, 10000)}
+      Return a single Root Node object.
     `;
   
     try {
       const response = await ai.models.generateContent({
         model: MODEL_NAME,
-        contents: prompt,
+        contents: buildContents(prompt, text, context, images),
         config: {
           responseMimeType: "application/json",
-           responseSchema: {
+          responseSchema: {
             type: Type.OBJECT,
             properties: {
-                schedule: {
+                id: { type: Type.STRING },
+                label: { type: Type.STRING },
+                details: { type: Type.STRING },
+                children: {
                     type: Type.ARRAY,
                     items: {
                         type: Type.OBJECT,
                         properties: {
-                            day: { type: Type.INTEGER },
-                            date: { type: Type.STRING },
-                            topics: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            activities: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            durationMinutes: { type: Type.INTEGER }
+                            id: { type: Type.STRING },
+                            label: { type: Type.STRING },
+                            details: { type: Type.STRING },
+                            children: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        id: { type: Type.STRING },
+                                        label: { type: Type.STRING },
+                                        details: { type: Type.STRING },
+                                        children: { 
+                                            type: Type.ARRAY, 
+                                            items: {
+                                                type: Type.OBJECT,
+                                                properties: {
+                                                    id: { type: Type.STRING },
+                                                    label: { type: Type.STRING },
+                                                    details: { type: Type.STRING }
+                                                }
+                                            } 
+                                        } 
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -166,17 +200,34 @@ export const generateStudyPlan = async (text: string, examDate: string, dailyMin
       });
   
       const json = JSON.parse(response.text || "{}");
-      
-      return {
-        id: `plan-${Date.now()}`,
-        materialId: '', // Filled by caller
-        examDate,
-        dailyMinutes,
-        schedule: json.schedule || [],
-        createdAt: Date.now()
-      };
+      // Fallback if empty
+      if (!json.label) return { id: 'root', label: 'Main Topic', children: [] };
+      return json;
+
     } catch (error) {
-      console.error("Gemini API Error:", error);
-      throw new Error("Failed to generate study plan.");
+      console.error("Gemini API Error (Map):", error);
+      return { id: 'error', label: 'Could not generate map', children: [] };
+    }
+  };
+
+export const generateShortOverview = async (text: string, context?: string, images?: string[]): Promise<string> => {
+    const prompt = `
+      You are a helpful study buddy.
+      Create a very concise, engaging overview of this study material.
+      It should be a single paragraph (max 4-5 sentences) that describes exactly what the user will learn or practice from these notes.
+      Use a friendly, encouraging tone.
+      Do not use markdown like bold or headers, just plain text.
+    `;
+  
+    try {
+      const response = await ai.models.generateContent({
+        model: MODEL_NAME,
+        contents: buildContents(prompt, text, context, images),
+      });
+  
+      return response.text || "Ready to study! This set covers your uploaded material.";
+    } catch (error) {
+      console.error("Gemini API Error (Overview):", error);
+      return "Your study set is ready!";
     }
   };
