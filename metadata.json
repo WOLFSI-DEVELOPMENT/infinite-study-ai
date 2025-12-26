@@ -1,0 +1,5 @@
+{
+  "name": "Infinite Study AI",
+  "description": "An intelligent study assistant that transforms your notes into summaries, flashcards, quizzes, and personalized study plans using Gemini 3.0 Flash.",
+  "requestFramePermissions": []
+}
